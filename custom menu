@@ -1,0 +1,285 @@
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu('Custom Menu')
+    .addItem('Open Dialog', 'openDialog')
+    .addToUi();
+}
+function openDialog() {
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Dialog</title>
+        <style>
+            body {
+                  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                  background-color: #f8f9fa;
+                  margin: 0;
+                  padding: 0;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                }
+
+                h1 {
+                  font-size: 2rem;
+                  color: #343a40;
+                  margin-top: 20px;
+                }
+
+                input[type="text"] {
+                  width: 80%;
+                  max-width: 400px;
+                  padding: 10px;
+                  margin: 20px 0;
+                  font-size: 16px;
+                  border: 1px solid #ced4da;
+                  border-radius: 5px;
+                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                  transition: all 0.3s ease;
+                }
+
+                input[type="text"]:focus {
+                  border-color: #007bff;
+                  outline: none;
+                  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+                }
+
+                table {
+                  width: 90%;
+                  max-width: 800px;
+                  margin: 20px 0;
+                  border-collapse: collapse;
+                  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                  border-radius: 10px;
+                  overflow: hidden;
+                }
+
+                th, td {
+                  padding: 12px 15px;
+                  text-align: left;
+                  border-bottom: 1px solid #ddd;
+                  font-size: 14px;
+                }
+
+                th {
+                  background-color: #007bff;
+                  color: white;
+                  text-transform: uppercase;
+                }
+
+                tr:nth-child(even) {
+                  background-color: #f2f2f2;
+                }
+
+                tr:hover {
+                  background-color: #e9ecef;
+                  cursor: pointer;
+                }
+
+                button {
+                  padding: 10px 25px;
+                  font-size: 16px;
+                  background-color: #007bff;
+                  color: white;
+                  border: none;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+                  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+                }
+
+                button:hover {
+                  background-color: #0056b3;
+                  box-shadow: 0 6px 12px rgba(0, 86, 179, 0.3);
+                }
+
+                @media (max-width: 768px) {
+                  input[type="text"] {
+                    width: 95%;
+                  }
+
+                  table {
+                    width: 95%;
+                  }
+                }
+
+        </style>
+      </head>
+      <body>
+        <h2>Search Emails</h2>
+        <input type="text" id="searchInput" placeholder="Search email..." oninput="searchEmail()" />
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Name</th>
+            </tr>
+          </thead>
+          <tbody id="emailTable">
+            <tr>
+              <td colspan="2">Matching data will appear here</td>
+            </tr>
+          </tbody>
+        </table>
+        <div id="questionsAndAnswers"></div>
+
+        <script>
+          let allData = [];
+
+          // Load all data initially
+          function loadEmailsAndNames() {
+            google.script.run.withSuccessHandler(function (data) {
+              allData = data; // Save all data for searching
+              console.log("Loaded Data: ", allData);  // Log loaded data
+              displayEmailsAndNames(data); // Display all emails and names initially
+            }).getEmailsNamesAndAnswers(); // Fetch data for emails, names, and answers
+          }
+
+          // Display email and name in a table
+          function displayEmailsAndNames(data) {
+            const emailTable = document.getElementById('emailTable');
+            emailTable.innerHTML = ''; // Clear previous rows
+
+            if (data.length === 0) {
+              const emptyRow = document.createElement('tr');
+              emptyRow.innerHTML = '<td colspan="2">No matching emails found</td>';
+              emailTable.appendChild(emptyRow);
+              return;
+            }
+
+            data.forEach(item => {
+              const row = document.createElement('tr');
+              row.innerHTML = \`
+                <td onclick="setEmailToSearch('\${item.email}')">\${item.email}</td>
+                <td>\${item.name}</td>
+              \`;
+              emailTable.appendChild(row);
+            });
+          }
+
+          // Set email to search field when email is clicked
+          function setEmailToSearch(email) {
+            document.getElementById('searchInput').value = email;
+            displayAllDataForEmail(email); // Display all data immediately after setting the email
+          }
+          
+          // Display all data (email, name, and questions/answers) for the searched email
+          function displayAllDataForEmail(email) {
+            const data = allData.filter(item => item.email.toLowerCase() === email.toLowerCase());
+
+            const container = document.getElementById('questionsAndAnswers');
+            container.innerHTML = ''; // Clear previous data
+
+            if (data.length === 0) {
+              container.innerHTML = 'No data found for this email';
+              return;
+            }
+
+            // Create a table to display all data (email, name, questions, and answers)
+            const table = document.createElement('table');
+            table.style.width = '100%';
+            table.style.borderCollapse = 'collapse';
+
+            // Create table header for email and name
+            // const headerRow = document.createElement('tr');
+            // const headerEmail = document.createElement('th');
+            // headerEmail.textContent = 'Email';
+            // const headerName = document.createElement('th');
+            // headerName.textContent = 'Name';
+            // headerRow.appendChild(headerEmail);
+            // headerRow.appendChild(headerName);
+            // table.appendChild(headerRow);
+
+            // Display email and name
+            // const row = document.createElement('tr');
+            // row.innerHTML = \`
+            //   <td>\${data[0].email}</td>
+            //   <td>\${data[0].name}</td>
+            // \`;
+            // table.appendChild(row);
+
+            // Create a row for questions and answers
+            const questionAnswerHeader = document.createElement('tr');
+            const headerQuestion = document.createElement('th');
+            headerQuestion.textContent = 'Question';
+            const headerAnswer = document.createElement('th');
+            headerAnswer.textContent = 'Answer';
+            questionAnswerHeader.appendChild(headerQuestion);
+            questionAnswerHeader.appendChild(headerAnswer);
+            table.appendChild(questionAnswerHeader);
+
+            // Loop through the data for questions and answers
+            data[0].answers.forEach((answer, index) => {
+              const answerRow = document.createElement('tr');
+              const questionCell = document.createElement('td');
+              questionCell.textContent = allData[0].headers[index]; // Assuming the headers contain question titles
+              const answerCell = document.createElement('td');
+              answerCell.textContent = answer;  // Display corresponding answers
+
+              answerRow.appendChild(questionCell);
+              answerRow.appendChild(answerCell);
+              table.appendChild(answerRow);
+            });
+
+            // Append the table to the container
+            container.appendChild(table);
+          }
+
+          // Search for the email and display corresponding answers
+          function searchEmail() {
+            const query = document.getElementById('searchInput').value;
+            const email = query.trim().toLowerCase();
+
+            if (email) {
+              // Filter matching emails
+              const filteredData = allData.filter(item => item.email.toLowerCase().includes(email));
+              console.log("Filtered Data: ", filteredData);  // Log the filtered data
+
+              displayEmailsAndNames(filteredData);  // Display matching emails
+              displayAllDataForEmail(email);        // Display all data for the searched email
+            } else {
+              document.getElementById('questionsAndAnswers').innerHTML = ''; // Clear answers if no query
+              displayEmailsAndNames(allData);  // Display all emails
+            }
+          }
+
+          // Load data when the dialog opens
+          window.onload = loadEmailsAndNames;
+        </script>
+      </body>
+    </html>
+  `;
+
+  const html = HtmlService.createHtmlOutput(htmlContent)
+    .setWidth(800)
+    .setHeight(600);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Search Emails and Answers');
+}
+
+function getEmailsNamesAndAnswers() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('dialog');
+  const data = sheet.getDataRange().getDisplayValues();
+  
+  const headers = data[0]; // First row is the header
+  
+  const rows = data.slice(1); // All other rows contain the data
+    // Logger.log(rows);
+    // return ; 
+  const result = rows.map(row => {
+    const email = row[1]; // Assuming the second column (index 1) contains email
+    const name = row[2]; // Assuming the third column (index 2) contains name
+    const answers = [];
+
+    // Loop through the columns starting from the first column (index 0)
+    for (let i = 0; i < row.length; i++) {
+      answers.push(row[i]);
+    }
+
+    return { email, name, answers, headers };
+  });
+
+  // console.log("All Data: ", result);  // Log all extracted data
+
+  return result;
+}
